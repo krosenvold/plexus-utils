@@ -73,6 +73,14 @@ public class DirectoryScannerTest
         }
 
     }
+    public void testDirs(){
+       File temp = new File("/home/kristian/fab");
+        assertFalse( temp.isDirectory());
+        assertFalse( temp.isFile());
+        temp = new File("/home/kristian");
+         assertTrue( temp.isDirectory());
+         assertFalse( temp.isFile());
+    }
     public void testCrossPlatformExcludesString()
         throws IOException, URISyntaxException
     {

@@ -362,6 +362,20 @@ public abstract class AbstractScanner
     protected boolean isIncluded( String name )
     {
         final int length = includes.length;
+        TokenizedName tokenizedName = new TokenizedName( name );
+        for ( int i = 0; i < length; i++ )
+        {
+            if ( includes[i].matchPath( tokenizedName, isCaseSensitive ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean isIncluded( TokenizedName name )
+    {
+        final int length = includes.length;
         for ( int i = 0; i < length; i++ )
         {
             if ( includes[i].matchPath( name, isCaseSensitive ) )
@@ -371,7 +385,7 @@ public abstract class AbstractScanner
         }
         return false;
     }
-  
+
     /**
      * Tests whether or not a name matches the start of at least one include
      * pattern.
@@ -404,6 +418,20 @@ public abstract class AbstractScanner
     protected boolean isExcluded( String name )
     {
         final int length = excludes.length;
+        TokenizedName tokenizedName = new TokenizedName( name );
+        for ( int i = 0; i < length; i++ )
+        {
+            if ( excludes[i].matchPath( tokenizedName, isCaseSensitive ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+  
+    protected boolean isExcluded( TokenizedName name )
+    {
+        final int length = excludes.length;
         for ( int i = 0; i < length; i++ )
         {
             if ( excludes[i].matchPath( name, isCaseSensitive ) )
@@ -413,7 +441,7 @@ public abstract class AbstractScanner
         }
         return false;
     }
-  
+
     /**
      * Adds default exclusions to the current exclusions set.
      */

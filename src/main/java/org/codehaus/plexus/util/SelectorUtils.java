@@ -277,25 +277,26 @@ public final class SelectorUtils
     }
 
     private static boolean matchAntPathPattern( String pattern, String str, boolean isCaseSensitive ){
+        TokenizedName tokenizedName = new TokenizedName( str );
         Vector tokenized =  tokenizePath( pattern, File.separator );
         boolean startsWithPathSeparator = pattern.startsWith( File.separator );
-        return matchAntPathPattern(  tokenized, startsWithPathSeparator, str, isCaseSensitive );
+        return matchAntPathPattern(  tokenized, startsWithPathSeparator, tokenizedName , isCaseSensitive );
 
     }
 
-    static boolean matchAntPathPattern( Vector tokenizedPattern, boolean startsWithPathSeparator, String str, boolean isCaseSensitive ){
+    static boolean matchAntPathPattern( Vector tokenizedPattern, boolean startsWithPathSeparator, TokenizedName str, boolean isCaseSensitive ){
         // When str starts with a File.separator, pattern has to start with a
         // File.separator.
         // When pattern starts with a File.separator, str has to start with a
         // File.separator.
-        if ( str.startsWith( File.separator ) !=
+        if ( str.getName().startsWith( File.separator ) !=
             startsWithPathSeparator )
         {
             return false;
         }
 
         Vector patDirs = tokenizedPattern;
-        Vector strDirs = tokenizePath( str, File.separator.charAt( 0 ) );
+        Vector strDirs = str.getTokenizedName();
 
         int patIdxStart = 0;
         int patIdxEnd = patDirs.size() - 1;

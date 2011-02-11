@@ -469,11 +469,12 @@ public class DirectoryScanner extends AbstractScanner
         {
             String name = vpath + newfiles[i];
             File file = new File( dir, newfiles[i] );
+            TokenizedName tokenizedName = new TokenizedName( name );
             if ( file.isFile() )
             {
-                if ( isIncluded( name ) )
+                if ( isIncluded( tokenizedName ) )
                 {
-                    if ( !isExcluded( name ) )
+                    if ( !isExcluded( tokenizedName ) )
                     {
                         if ( isSelected( name, file ) )
                         {
@@ -499,9 +500,9 @@ public class DirectoryScanner extends AbstractScanner
             }
             else if ( file.isDirectory() )
             {
-                if ( isIncluded( name ) )
+                if ( isIncluded( tokenizedName ) )
                 {
-                    if ( !isExcluded( name ) )
+                    if ( !isExcluded( tokenizedName ) )
                     {
                         if ( isSelected( name, file ) )
                         {

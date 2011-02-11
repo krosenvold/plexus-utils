@@ -60,7 +60,7 @@ public abstract class SelectorPattern
 
         }
 
-        public boolean matchPath( String str, boolean isCaseSensitive )
+        public boolean matchPath( TokenizedName str, boolean isCaseSensitive )
         {
             return SelectorUtils.matchAntPathPattern( tokenizedAntPattern, startsWithPathSeparator, str,
                                                       isCaseSensitive );
@@ -93,9 +93,9 @@ public abstract class SelectorPattern
             this.compiledRegex = Pattern.compile( getSubstringPattern( pattern ) );
         }
 
-        public boolean matchPath( String str, boolean isCaseSensitive )
+        public boolean matchPath( TokenizedName str, boolean isCaseSensitive )
         {
-            return compiledRegex.matcher( str ).matches();
+            return compiledRegex.matcher( str.getName() ).matches();
         }
 
         private static String getSubstringPattern( String pattern )
@@ -121,6 +121,6 @@ public abstract class SelectorPattern
     }
 
 
-    public abstract boolean matchPath( String str, boolean isCaseSensitive );
+    public abstract boolean matchPath( TokenizedName str, boolean isCaseSensitive );
 
 }
