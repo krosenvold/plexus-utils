@@ -46,8 +46,6 @@ public abstract class SelectorPattern
     {
         static final String ANT_HANDLER_PREFIX = "%ant" + PATTERN_HANDLER_PREFIX;
 
-        private final String pattern;
-
         private final Vector tokenizedAntPattern;
 
         private final boolean startsWithPathSeparator;
@@ -56,7 +54,7 @@ public abstract class SelectorPattern
         {
             super( patternString);
             boolean isAntPrefixPattern = isAntPrefixPattern( patternString );
-            this.pattern = isAntPrefixPattern ? getAntPrefixPattern( patternString ) : patternString;
+            String pattern = isAntPrefixPattern ? getAntPrefixPattern( patternString ) : patternString;
             this.tokenizedAntPattern = SelectorUtils.tokenizePath( pattern, File.separator );
             startsWithPathSeparator = patternString.startsWith( File.separator );
 
@@ -86,15 +84,12 @@ public abstract class SelectorPattern
     {
         public static final String REGEX_HANDLER_PREFIX = "%regex" + PATTERN_HANDLER_PREFIX;
 
-        private final String pattern;
-
         private final Pattern compiledRegex;
 
 
         SubstringSelectorPattern( String pattern )
         {
             super( pattern );
-            this.pattern = pattern;
             this.compiledRegex = Pattern.compile( getSubstringPattern( pattern ) );
         }
 

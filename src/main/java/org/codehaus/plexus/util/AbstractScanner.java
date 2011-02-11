@@ -280,10 +280,11 @@ public abstract class AbstractScanner
         }
         else
         {
+            final int length = includes.length;
             this.includes = new SelectorPattern[includes.length];
-            for ( int i = 0; i < includes.length; i++ )
+            for ( int i = 0; i < length; i++ )
             {
-                this.includes[i] = SelectorPattern.getPattern( normalizePattern( includes[i] ));
+                this.includes[i] = SelectorPattern.getPattern( normalizePattern( includes[i] ) );
             }
         }
     }
@@ -311,7 +312,7 @@ public abstract class AbstractScanner
             this.excludes = new SelectorPattern[excludes.length];
             for ( int i = 0; i < excludes.length; i++ )
             {
-                this.excludes[i] = SelectorPattern.getPattern( normalizePattern( excludes[i] ));
+                this.excludes[i] = SelectorPattern.getPattern( normalizePattern( excludes[i] ) );
             }
         }
     }
@@ -360,7 +361,8 @@ public abstract class AbstractScanner
      */
     protected boolean isIncluded( String name )
     {
-        for ( int i = 0; i < includes.length; i++ )
+        final int length = includes.length;
+        for ( int i = 0; i < length; i++ )
         {
             if ( includes[i].matchPath( name, isCaseSensitive ) )
             {
@@ -380,7 +382,8 @@ public abstract class AbstractScanner
      */
     protected boolean couldHoldIncluded( String name )
     {
-        for ( int i = 0; i < includes.length; i++ )
+        final int length = includes.length;
+        for ( int i = 0; i < length; i++ )
         {
             if ( matchPatternStart( includes[i].getSourcePattern(), name, isCaseSensitive ) )
             {
@@ -400,7 +403,8 @@ public abstract class AbstractScanner
      */
     protected boolean isExcluded( String name )
     {
-        for ( int i = 0; i < excludes.length; i++ )
+        final int length = excludes.length;
+        for ( int i = 0; i < length; i++ )
         {
             if ( excludes[i].matchPath( name, isCaseSensitive ) )
             {
@@ -424,7 +428,8 @@ public abstract class AbstractScanner
         }
         for ( int i = 0; i < DEFAULTEXCLUDES.length; i++ )
         {
-            newExcludes[i + excludesLength] = SelectorPattern.getPattern( DEFAULTEXCLUDES[i].replace( '/', File.separatorChar ));
+            newExcludes[i + excludesLength] = SelectorPattern.getPattern(
+                DEFAULTEXCLUDES[i].replace( '/', File.separatorChar ) );
         }
         excludes = newExcludes;
     }

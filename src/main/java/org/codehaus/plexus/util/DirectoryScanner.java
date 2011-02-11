@@ -469,7 +469,35 @@ public class DirectoryScanner extends AbstractScanner
         {
             String name = vpath + newfiles[i];
             File file = new File( dir, newfiles[i] );
-            if ( file.isDirectory() )
+            if ( file.isFile() )
+            {
+                if ( isIncluded( name ) )
+                {
+                    if ( !isExcluded( name ) )
+                    {
+                        if ( isSelected( name, file ) )
+                        {
+                            filesIncluded.addElement( name );
+                        }
+                        else
+                        {
+                            everythingIncluded = false;
+                            filesDeselected.addElement( name );
+                        }
+                    }
+                    else
+                    {
+                        everythingIncluded = false;
+                        filesExcluded.addElement( name );
+                    }
+                }
+                else
+                {
+                    everythingIncluded = false;
+                    filesNotIncluded.addElement( name );
+                }
+            }
+            else if ( file.isDirectory() )
             {
                 if ( isIncluded( name ) )
                 {
@@ -516,34 +544,6 @@ public class DirectoryScanner extends AbstractScanner
                 if ( !fast )
                 {
                     scandir( file, name + File.separator, fast );
-                }
-            }
-            else if ( file.isFile() )
-            {
-                if ( isIncluded( name ) )
-                {
-                    if ( !isExcluded( name ) )
-                    {
-                        if ( isSelected( name, file ) )
-                        {
-                            filesIncluded.addElement( name );
-                        }
-                        else
-                        {
-                            everythingIncluded = false;
-                            filesDeselected.addElement( name );
-                        }
-                    }
-                    else
-                    {
-                        everythingIncluded = false;
-                        filesExcluded.addElement( name );
-                    }
-                }
-                else
-                {
-                    everythingIncluded = false;
-                    filesNotIncluded.addElement( name );
                 }
             }
         }
