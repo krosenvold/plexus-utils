@@ -675,6 +675,22 @@ public final class SelectorUtils
         return ret;
     }
 
+    public static Vector tokenizePath( String path, char separator )
+    {
+        Vector ret = new Vector();
+        int start = 0;
+        for (int i = 0; i < path.length(); i++){
+            if (path.charAt(  i ) == separator){
+                if ( i > 0) ret.addElement( path.substring( start, i));
+                start = i + 1;
+            }
+        }
+        if (!(path.charAt( path.length() - 1) == separator)) {
+            ret.addElement( path.substring( start) );
+        }
+        return ret;
+    }
+
 
     /**
      * Returns dependency information on these two files. If src has been
