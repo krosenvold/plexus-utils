@@ -678,6 +678,7 @@ public final class SelectorUtils
     public static Vector tokenizePath( String path, char separator )
     {
         Vector ret = new Vector();
+        if (path == null || path.length() == 0) return ret;
         int start = 0;
         for (int i = 0; i < path.length(); i++){
             if (path.charAt(  i ) == separator){

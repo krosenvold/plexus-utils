@@ -37,6 +37,16 @@ public class SelectorUtilsTest
         Assert.assertEquals( "EF", vector.get( 2 ) );
     }
 
+    public void testTokenizeNull()
+        throws Exception
+    {
+
+        Vector vector = SelectorUtils.tokenizePath( null, '.' );
+        Assert.assertEquals( 0, vector.size() );
+        vector = SelectorUtils.tokenizePath( "", '.' );
+        Assert.assertEquals( 0, vector.size() );
+    }
+
     public void testTokenizePathDotAtEnd()
         throws Exception
     {
