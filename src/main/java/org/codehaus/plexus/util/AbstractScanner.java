@@ -114,10 +114,10 @@ public abstract class AbstractScanner
     };
   
     /** The patterns for the files to be included. */
-    protected String[] includes;
+    protected SelectorPattern[] includes;
   
     /** The patterns for the files to be excluded. */
-    protected String[] excludes;
+    protected SelectorPattern[] excludes;
   
     /**
      * Whether or not the file system should be treated as a case sensitive
@@ -280,10 +280,10 @@ public abstract class AbstractScanner
         }
         else
         {
-            this.includes = new String[includes.length];
+            this.includes = new SelectorPattern[includes.length];
             for ( int i = 0; i < includes.length; i++ )
             {
-                this.includes[i] = normalizePattern( includes[i] );
+                this.includes[i] = SelectorPattern.getPattern( normalizePattern( includes[i] ));
             }
         }
     }
@@ -308,10 +308,10 @@ public abstract class AbstractScanner
         }
         else
         {
-            this.excludes = new String[excludes.length];
+            this.excludes = new SelectorPattern[excludes.length];
             for ( int i = 0; i < excludes.length; i++ )
             {
-                this.excludes[i] = normalizePattern( excludes[i] );
+                this.excludes[i] = SelectorPattern.getPattern( normalizePattern( excludes[i] ));
             }
         }
     }
@@ -362,7 +362,7 @@ public abstract class AbstractScanner
     {
         for ( int i = 0; i < includes.length; i++ )
         {
-            if ( matchPath( includes[i], name, isCaseSensitive ) )
+            if ( includes[i].matchPath( name, isCaseSensitive ) )
             {
                 return true;
             }
@@ -382,7 +382,7 @@ public abstract class AbstractScanner
     {
         for ( int i = 0; i < includes.length; i++ )
         {
-            if ( matchPatternStart( includes[i], name, isCaseSensitive ) )
+            if ( matchPatternStart( includes[i].getSourcePattern(), name, isCaseSensitive ) )
             {
                 return true;
             }
@@ -402,7 +402,7 @@ public abstract class AbstractScanner
     {
         for ( int i = 0; i < excludes.length; i++ )
         {
-            if ( matchPath( excludes[i], name, isCaseSensitive ) )
+            if ( excludes[i].matchPath( name, isCaseSensitive ) )
             {
                 return true;
             }
@@ -416,15 +416,15 @@ public abstract class AbstractScanner
     public void addDefaultExcludes()
     {
         int excludesLength = excludes == null ? 0 : excludes.length;
-        String[] newExcludes;
-        newExcludes = new String[excludesLength + DEFAULTEXCLUDES.length];
+        SelectorPattern[] newExcludes;
+        newExcludes = new SelectorPattern[excludesLength + DEFAULTEXCLUDES.length];
         if ( excludesLength > 0 )
         {
             System.arraycopy( excludes, 0, newExcludes, 0, excludesLength );
         }
         for ( int i = 0; i < DEFAULTEXCLUDES.length; i++ )
         {
-            newExcludes[i + excludesLength] = DEFAULTEXCLUDES[i].replace( '/', File.separatorChar );
+            newExcludes[i + excludesLength] = SelectorPattern.getPattern( DEFAULTEXCLUDES[i].replace( '/', File.separatorChar ));
         }
         excludes = newExcludes;
     }
@@ -434,12 +434,12 @@ public abstract class AbstractScanner
         if ( includes == null )
         {
             // No includes supplied, so set it to 'matches all'
-            includes = new String[1];
-            includes[0] = "**";
+            includes = new SelectorPattern[1];
+            includes[0] = SelectorPattern.getPattern( "**");
         }
         if ( excludes == null )
         {
-            excludes = new String[0];
+            excludes = new SelectorPattern[0];
         }
     }
 }

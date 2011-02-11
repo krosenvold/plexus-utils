@@ -59,6 +59,20 @@ public class DirectoryScannerTest
         assertEquals( 1, files.length );
     }
 
+
+    public void testScanLots(){
+        for (int i = 0; i < 20; i++){
+            DirectoryScanner ds = new DirectoryScanner();
+            ds.setBasedir( new File( "/home/kristian/fast/"));
+            ds.setIncludes( new String[]{"**/*","**/B*" } );
+            long start = System.currentTimeMillis();
+            ds.scan();
+            final String[] includedFiles = ds.getIncludedFiles();
+            final long elapsed = System.currentTimeMillis() - start;
+            System.out.println( "Found " + includedFiles.length + " files in " + elapsed + "ms");
+        }
+
+    }
     public void testCrossPlatformExcludesString()
         throws IOException, URISyntaxException
     {

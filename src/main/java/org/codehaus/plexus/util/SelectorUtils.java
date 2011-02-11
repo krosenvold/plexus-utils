@@ -55,6 +55,8 @@
 package org.codehaus.plexus.util;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
@@ -274,19 +276,25 @@ public final class SelectorUtils
         }
     }
 
-    private static boolean matchAntPathPattern( String pattern, String str, boolean isCaseSensitive )
-    {
+    private static boolean matchAntPathPattern( String pattern, String str, boolean isCaseSensitive ){
+        Vector tokenized =  tokenizePath( pattern, File.separator );
+        boolean startsWithPathSeparator = pattern.startsWith( File.separator );
+        return matchAntPathPattern(  tokenized, startsWithPathSeparator, str, isCaseSensitive );
+
+    }
+
+    static boolean matchAntPathPattern( Vector tokenizedPattern, boolean startsWithPathSeparator, String str, boolean isCaseSensitive ){
         // When str starts with a File.separator, pattern has to start with a
         // File.separator.
         // When pattern starts with a File.separator, str has to start with a
         // File.separator.
         if ( str.startsWith( File.separator ) !=
-            pattern.startsWith( File.separator ) )
+            startsWithPathSeparator )
         {
             return false;
         }
 
-        Vector patDirs = tokenizePath( pattern, File.separator );
+        Vector patDirs = tokenizedPattern;
         Vector strDirs = tokenizePath( str, File.separator );
 
         int patIdxStart = 0;
