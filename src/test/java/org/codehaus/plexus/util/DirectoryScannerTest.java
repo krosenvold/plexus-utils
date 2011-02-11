@@ -61,7 +61,7 @@ public class DirectoryScannerTest
 
 
     public void testScanLots(){
-        for (int i = 0; i < 20; i++){
+        for (int i = 0; i < 50; i++){
             DirectoryScanner ds = new DirectoryScanner();
             ds.setBasedir( new File( "/home/kristian/fast/"));
             ds.setIncludes( new String[]{"**/*","**/B*" } );
@@ -69,7 +69,7 @@ public class DirectoryScannerTest
             ds.scan();
             final String[] includedFiles = ds.getIncludedFiles();
             final long elapsed = System.currentTimeMillis() - start;
-            System.out.println( "Found " + includedFiles.length + " files in " + elapsed + "ms");
+            System.out.println( "Run " + i + ", found " + includedFiles.length + " files in " + elapsed + "ms");
         }
 
     }
