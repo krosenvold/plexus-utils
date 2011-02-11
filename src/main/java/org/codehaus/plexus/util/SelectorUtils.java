@@ -295,7 +295,7 @@ public final class SelectorUtils
         }
 
         Vector patDirs = tokenizedPattern;
-        Vector strDirs = tokenizePath( str, File.separator );
+        Vector strDirs = tokenizePath( str, File.separator.charAt( 0 ) );
 
         int patIdxStart = 0;
         int patIdxEnd = patDirs.size() - 1;
