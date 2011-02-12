@@ -55,7 +55,7 @@ public abstract class SelectorPattern
             super( patternString);
             boolean isAntPrefixPattern = isAntPrefixPattern( patternString );
             String pattern = isAntPrefixPattern ? getAntPrefixPattern( patternString ) : patternString;
-            this.tokenizedAntPattern = SelectorUtils.tokenizePath( pattern, File.separator );
+            this.tokenizedAntPattern = SelectorUtils.tokenizePath( pattern, File.separator.charAt( 0 ) );
             startsWithPathSeparator = patternString.startsWith( File.separator );
 
         }
