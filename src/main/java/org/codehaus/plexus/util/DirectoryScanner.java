@@ -581,7 +581,6 @@ public class DirectoryScanner extends AbstractScanner
         {
             public void run()
             {
-                numStarted++;
                 scandir( dir, vpath, fast );
                 numStarted--;
                 synchronized ( lock ){
@@ -591,9 +590,10 @@ public class DirectoryScanner extends AbstractScanner
             }
         };
 
-        if ( moreThanOneFile )
+        if ( moreThanOneFile ){
+            numStarted++;
             new Thread( target).start();
-        else
+        } else
             target.run();
     }
 
