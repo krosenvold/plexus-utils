@@ -560,7 +560,7 @@ public class DirectoryScanner extends AbstractScanner
     final Object lock = new Object();
     private void waitForAllThreads()
     {
-        while ( numStarted != 0) {
+        while ( numStarted > 0) {
             synchronized ( lock ){
                 try
                 {
