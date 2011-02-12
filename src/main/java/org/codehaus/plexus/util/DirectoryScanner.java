@@ -330,7 +330,9 @@ public class DirectoryScanner extends AbstractScanner
             dirsNotIncluded.addElement( "" );
         }
         scandir( basedir, "", true );
+        waitForAllThreads();
     }
+
 
     /**
      * Top level invocation for a slow scan. A slow scan builds up a full
@@ -372,6 +374,7 @@ public class DirectoryScanner extends AbstractScanner
         }
 
         haveSlowResults = true;
+        waitForAllThreads();
     }
 
     /**
@@ -428,6 +431,7 @@ public class DirectoryScanner extends AbstractScanner
         }
 
         int length = newfiles.length;
+        boolean isMoreThanOneFile = length > 1;
         if ( !followSymlinks )
         {
             Vector noLinks = new Vector();
@@ -511,7 +515,7 @@ public class DirectoryScanner extends AbstractScanner
                             dirsIncluded.addElement( name );
                             if ( fast )
                             {
-                                scandir( file, name + File.separator, fast );
+                                threadedScanDir( file, name + File.separator, fast, isMoreThanOneFile );
                             }
                         }
                         else
@@ -520,7 +524,7 @@ public class DirectoryScanner extends AbstractScanner
                             dirsDeselected.addElement( name );
                             if ( fast && couldHoldIncluded( name ) )
                             {
-                                scandir( file, name + File.separator, fast );
+                                threadedScanDir( file, name + File.separator, fast, isMoreThanOneFile );
                             }
                         }
 
@@ -531,7 +535,7 @@ public class DirectoryScanner extends AbstractScanner
                         dirsExcluded.addElement( name );
                         if ( fast && couldHoldIncluded( name ) )
                         {
-                            scandir( file, name + File.separator, fast );
+                            threadedScanDir( file, name + File.separator, fast, isMoreThanOneFile );
                         }
                     }
                 }
@@ -541,15 +545,55 @@ public class DirectoryScanner extends AbstractScanner
                     dirsNotIncluded.addElement( name );
                     if ( fast && couldHoldIncluded( name ) )
                     {
-                        scandir( file, name + File.separator, fast );
+                        threadedScanDir( file, name + File.separator, fast, isMoreThanOneFile );
                     }
                 }
                 if ( !fast )
                 {
-                    scandir( file, name + File.separator, fast );
+                    threadedScanDir( file, name + File.separator, fast, isMoreThanOneFile );
                 }
             }
         }
+    }
+
+    volatile int numStarted = 0;
+    final Object lock = new Object();
+    private void waitForAllThreads()
+    {
+        while ( numStarted != 0) {
+            synchronized ( lock ){
+                try
+                {
+                    lock.wait();
+                }
+                catch ( InterruptedException e )
+                {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                }
+
+            }
+        }
+        //To change body of created methods use File | Settings | File Templates.
+    }
+
+    private void threadedScanDir( final File dir, final String vpath, final boolean fast, boolean moreThanOneFile ){
+        Runnable target = new Runnable()
+        {
+            public void run()
+            {
+                numStarted++;
+                scandir( dir, vpath, fast );
+                synchronized ( lock ){
+                  lock.notify();
+                }
+
+            }
+        };
+
+        if ( moreThanOneFile )
+            new Thread( target).start();
+        else
+            target.run();
     }
 
     /**
