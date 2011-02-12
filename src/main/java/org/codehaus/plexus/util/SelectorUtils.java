@@ -284,7 +284,7 @@ public final class SelectorUtils
 
     }
 
-    static boolean matchAntPathPattern( Vector tokenizedPattern, boolean startsWithPathSeparator, TokenizedName str, boolean isCaseSensitive ){
+    static boolean matchAntPathPattern( Vector patDirs, boolean startsWithPathSeparator, TokenizedName str, boolean isCaseSensitive ){
         // When str starts with a File.separator, pattern has to start with a
         // File.separator.
         // When pattern starts with a File.separator, str has to start with a
@@ -295,7 +295,6 @@ public final class SelectorUtils
             return false;
         }
 
-        Vector patDirs = tokenizedPattern;
         Vector strDirs = str.getTokenizedName();
 
         int patIdxStart = 0;
@@ -314,8 +313,6 @@ public final class SelectorUtils
             if ( !match( patDir, (String) strDirs.elementAt( strIdxStart ),
                          isCaseSensitive ) )
             {
-                patDirs = null;
-                strDirs = null;
                 return false;
             }
             patIdxStart++;
@@ -328,8 +325,6 @@ public final class SelectorUtils
             {
                 if ( !patDirs.elementAt( i ).equals( "**" ) )
                 {
-                    patDirs = null;
-                    strDirs = null;
                     return false;
                 }
             }
@@ -340,8 +335,6 @@ public final class SelectorUtils
             if ( patIdxStart > patIdxEnd )
             {
                 // String not exhausted, but pattern is. Failure.
-                patDirs = null;
-                strDirs = null;
                 return false;
             }
         }
@@ -357,8 +350,6 @@ public final class SelectorUtils
             if ( !match( patDir, (String) strDirs.elementAt( strIdxEnd ),
                          isCaseSensitive ) )
             {
-                patDirs = null;
-                strDirs = null;
                 return false;
             }
             patIdxEnd--;
@@ -371,8 +362,6 @@ public final class SelectorUtils
             {
                 if ( !patDirs.elementAt( i ).equals( "**" ) )
                 {
-                    patDirs = null;
-                    strDirs = null;
                     return false;
                 }
             }
@@ -420,8 +409,6 @@ public final class SelectorUtils
 
             if ( foundIdx == -1 )
             {
-                patDirs = null;
-                strDirs = null;
                 return false;
             }
 
@@ -433,8 +420,6 @@ public final class SelectorUtils
         {
             if ( !patDirs.elementAt( i ).equals( "**" ) )
             {
-                patDirs = null;
-                strDirs = null;
                 return false;
             }
         }
