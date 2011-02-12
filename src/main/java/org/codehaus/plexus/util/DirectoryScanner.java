@@ -583,6 +583,7 @@ public class DirectoryScanner extends AbstractScanner
             {
                 numStarted++;
                 scandir( dir, vpath, fast );
+                numStarted--;
                 synchronized ( lock ){
                   lock.notify();
                 }
