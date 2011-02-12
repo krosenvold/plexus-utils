@@ -427,10 +427,11 @@ public class DirectoryScanner extends AbstractScanner
             // throw new IOException( "IO error scanning directory " + dir.getAbsolutePath() );
         }
 
+        int length = newfiles.length;
         if ( !followSymlinks )
         {
             Vector noLinks = new Vector();
-            for ( int i = 0; i < newfiles.length; i++ )
+            for ( int i = 0; i < length; i++ )
             {
                 try
                 {
@@ -465,10 +466,11 @@ public class DirectoryScanner extends AbstractScanner
             noLinks.copyInto( newfiles );
         }
 
-        for ( int i = 0; i < newfiles.length; i++ )
+        for ( int i = 0; i < length; i++ )
         {
-            String name = vpath + newfiles[i];
-            File file = new File( dir, newfiles[i] );
+            String newfile = newfiles[i];
+            String name = vpath + newfile;
+            File file = new File( dir, newfile );
             TokenizedName tokenizedName = new TokenizedName( name );
             if ( file.isFile() )
             {
