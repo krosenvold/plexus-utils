@@ -56,7 +56,8 @@ public interface Scanner
     void addDefaultExcludes();
 
     /**
-     * Scans the base directory for files which match at least one include
+     * Scans the base directory for files which match at least
+     * one include
      * pattern and don't match any exclude patterns.
      *
      * @exception IllegalStateException if the base directory was set

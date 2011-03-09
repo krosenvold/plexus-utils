@@ -154,7 +154,7 @@ public class FileUtils
 
     /**
      * @return the default excludes pattern
-     * @see DirectoryScanner#DEFAULTEXCLUDES
+     * @see org.codehaus.plexus.util.DirectoryScanner#DEFAULTEXCLUDES
      */
     public static String[] getDefaultExcludes()
     {
@@ -172,7 +172,7 @@ public class FileUtils
 
     /**
      * @return the default excludes pattern as comma separated string.
-     * @see DirectoryScanner#DEFAULTEXCLUDES
+     * @see org.codehaus.plexus.util.DirectoryScanner#DEFAULTEXCLUDES
      * @see StringUtils#join(Object[], String)
      */
     public static String getDefaultExcludesAsString()
