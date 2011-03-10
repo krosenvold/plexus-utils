@@ -156,6 +156,8 @@ public class PipelinedDirectoryScanner
      */
     private boolean isCaseSensitive = true;
 
+    public static final String POISON ="*POISON*";
+
 
     /**
      * Sole constructor.
@@ -168,6 +170,18 @@ public class PipelinedDirectoryScanner
         this.includes = getIncludes( includes );
         this.excludes = getExcludes( excludes );
         this.pipelineApi = pipelineApi;
+        if ( basedir == null )
+        {
+            throw new IllegalStateException( "No basedir set" );
+        }
+        if ( !basedir.exists() )
+        {
+            throw new IllegalStateException( "basedir " + basedir + " does not exist" );
+        }
+        if ( !basedir.isDirectory() )
+        {
+            throw new IllegalStateException( "basedir " + basedir + " is not a directory" );
+        }
     }
 
     /**
@@ -219,22 +233,34 @@ public class PipelinedDirectoryScanner
      *                               or isn't a directory).
      */
     public void scan()
-        throws IllegalStateException
+        throws IllegalStateException, InterruptedException
     {
-        if ( basedir == null )
-        {
-            throw new IllegalStateException( "No basedir set" );
-        }
-        if ( !basedir.exists() )
-        {
-            throw new IllegalStateException( "basedir " + basedir + " does not exist" );
-        }
-        if ( !basedir.isDirectory() )
-        {
-            throw new IllegalStateException( "basedir " + basedir + " is not a directory" );
-        }
+        Runnable scanner = new Runnable(){
+            public void run()
+            {
+                scandir( basedir );
+                pipelineApi.addElement( POISON );
+            }
+        };
 
-        scandir( basedir );
+        final Thread thread = new Thread( scanner );
+        thread.start();
+        thread.join();
+    }
+
+    public void scanThreaded()
+        throws IllegalStateException, InterruptedException
+    {
+        Runnable scanner = new Runnable(){
+            public void run()
+            {
+                scandir( basedir );
+                pipelineApi.addElement( POISON );
+            }
+        };
+
+        final Thread thread = new Thread( scanner );
+        thread.start();
     }
 
     /**
