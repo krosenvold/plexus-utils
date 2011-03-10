@@ -19,7 +19,6 @@ import org.codehaus.plexus.util.SelectorUtils;
 import org.codehaus.plexus.util.StringUtils;
 
 import java.io.File;
-import java.util.Vector;
 
 /**
  * Class for scanning a directory for files/directories which match certain
@@ -139,11 +138,6 @@ public class PipelinedDirectoryScanner
      */
     private final File basedir;
 
-    /**
-     * The files which matched at least one include and no excludes
-     * and were selected.
-     */
-    private Vector filesIncluded;
 
     /**
      * The patterns for the files to be included.
@@ -155,26 +149,25 @@ public class PipelinedDirectoryScanner
      */
     private final String[] excludes;
 
+    private final PipelineApi pipelineApi;
     /**
      * Whether or not the file system should be treated as a case sensitive
      * one.
      */
     private boolean isCaseSensitive = true;
 
+
     /**
      * Sole constructor.
      *
      * @noinspection JavaDoc
      */
-    public PipelinedDirectoryScanner( File basedir, String[] includes, String[] excludes )
+    public PipelinedDirectoryScanner( File basedir, String[] includes, String[] excludes, PipelineApi pipelineApi )
     {
         this.basedir = basedir;
         this.includes = getIncludes( includes );
         this.excludes = getExcludes( excludes );
-    }
-
-    private void addIncludedFile(String fileName){
-        filesIncluded.add( fileName);
+        this.pipelineApi = pipelineApi;
     }
 
     /**
@@ -224,9 +217,8 @@ public class PipelinedDirectoryScanner
      * @throws IllegalStateException if the base directory was set
      *                               incorrectly (i.e. if it is <code>null</code>, doesn't exist,
      *                               or isn't a directory).
-     * @return The list of files found
      */
-    public String[] scan()
+    public void scan()
         throws IllegalStateException
     {
         if ( basedir == null )
@@ -242,27 +234,8 @@ public class PipelinedDirectoryScanner
             throw new IllegalStateException( "basedir " + basedir + " is not a directory" );
         }
 
-        filesIncluded = new Vector();
-        if ( isIncluded( "" ) )
-        {
-            if ( !isExcluded( "" ) )
-            {
-            }
-            else
-            {
-            }
-        }
-        scandir( basedir, "", true );
-        return getIncludedFiles();
+        scandir( basedir );
     }
-
-    private String[] getIncludedFiles()
-    {
-        String[] files = new String[filesIncluded.size()];
-        filesIncluded.copyInto( files );
-        return files;
-    }
-
 
     /**
      * Scans the given directory for files and directories. Found files and
@@ -271,13 +244,8 @@ public class PipelinedDirectoryScanner
      * is found, it is scanned recursively.
      *
      * @param dir   The directory to scan. Must not be <code>null</code>.
-     * @param vpath The path relative to the base directory (needed to
-     *              prevent problems with an absolute path when using
-     *              dir). Must not be <code>null</code>.
-     * @param fast  Whether or not this call is part of a fast scan.
-     * @see #filesIncluded
      */
-    private void scandir( File dir, String vpath, boolean fast )
+    private void scandir( File dir)
     {
         String[] newfiles = dir.list();
 
@@ -308,39 +276,23 @@ public class PipelinedDirectoryScanner
             // throw new IOException( "IO error scanning directory " + dir.getAbsolutePath() );
         }
 
-        for ( int i = 0; i < newfiles.length; i++ )
+        final int length = newfiles.length;
+        for ( int i = 0; i < length; i++ )
         {
-            String name = vpath + newfiles[i];
-            File file = new File( dir, newfiles[i] );
-            if ( file.isDirectory() )
+            String name = newfiles[i];
+            File file = new File( dir, name );
+            if ( file.isDirectory() && couldHoldIncluded( name ))
             {
                 if ( isIncluded( name ) )
                 {
-                    if ( !isExcluded( name ) )
+                    if ( !isExcluded( name )   )
                     {
-                        if ( fast )
-                        {
-                            scandir( file, name + File.separator, fast );
-                        }
-                    }
-                    else
-                    {
-                        if ( fast && couldHoldIncluded( name ) )
-                        {
-                            scandir( file, name + File.separator, fast );
-                        }
+                       scandir( file );
                     }
                 }
                 else
                 {
-                    if ( fast && couldHoldIncluded( name ) )
-                    {
-                        scandir( file, name + File.separator, fast );
-                    }
-                }
-                if ( !fast )
-                {
-                    scandir( file, name + File.separator, fast );
+                    scandir( file);
                 }
             }
             else if ( file.isFile() )
@@ -349,7 +301,7 @@ public class PipelinedDirectoryScanner
                 {
                     if ( !isExcluded( name ) )
                     {
-                        addIncludedFile( name );
+                        pipelineApi.addElement( name );
                     }
                 }
             }

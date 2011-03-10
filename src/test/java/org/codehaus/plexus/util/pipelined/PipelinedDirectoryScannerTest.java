@@ -1,6 +1,7 @@
 package org.codehaus.plexus.util.pipelined;
 
 import java.io.File;
+import java.util.Iterator;
 
 import junit.framework.TestCase;
 import org.codehaus.plexus.util.DirectoryScanner;
@@ -15,8 +16,8 @@ public class PipelinedDirectoryScannerTest
         throws Exception
     {
         final String[] res2 = scanOld( new File( "." ) );
-        final String[] res1= scanNew( new File( "." ) );
-        assertEquals(  res1.length, res2.length );
+        int count = scanNew( new File( "." ) );
+        assertEquals( res2.length, count  );
         for (int i = 0; i < 5; i++){
         scanOld( new File( "." ) );
         scanNew( new File( "." ) );
@@ -24,13 +25,23 @@ public class PipelinedDirectoryScannerTest
 
     }
 
-    private String[] scanNew( File basedir )
+    private int scanNew( File basedir )
     {
         long start = System.currentTimeMillis();
-        PipelinedDirectoryScanner pipelinedDirectoryScanner = new PipelinedDirectoryScanner( basedir, null, null );
-        final String[] scan = pipelinedDirectoryScanner.scan();
+        IteratorApi iteratorApi = new IteratorApi();
+        PipelinedDirectoryScanner pipelinedDirectoryScanner = new PipelinedDirectoryScanner( basedir, null, null, iteratorApi );
+        pipelinedDirectoryScanner.scan();
+
+        Iterator iter = iteratorApi.iterator();
+
+        int i = 0;
+        while (iter.hasNext()){
+            iter.next();
+            i++;
+        }
+
         System.out.println(", new=" + (System.currentTimeMillis() - start));
-        return scan;
+        return i;
     }
 
     private String[] scanOld( File file )
