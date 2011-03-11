@@ -7,10 +7,10 @@ import java.util.concurrent.LinkedBlockingDeque;
  * @author Kristian Rosenvold
  */
 public class BlockDeQueueApi
-    extends PipelineApi
+    implements PipelineApi
 {
     BlockingDeque linkedBlockingQueue = new LinkedBlockingDeque( );
-    protected void addElement( String fileName )
+    public void addElement( String fileName )
     {
         linkedBlockingQueue.add(  fileName );
     }

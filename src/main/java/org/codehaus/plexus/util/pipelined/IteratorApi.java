@@ -7,13 +7,13 @@ import java.util.Vector;
  * @author Kristian Rosenvold
  */
 public class IteratorApi
-    extends PipelineApi
+    implements PipelineApi
 {
     private final Vector elements = new Vector();
 
     private volatile boolean done = false;
 
-    protected void addElement( String fileName )
+    public void addElement( String fileName )
     {
         //noinspection StringEquality
         if ( fileName == PipelinedDirectoryScanner.POISON )

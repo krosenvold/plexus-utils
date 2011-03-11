@@ -72,7 +72,7 @@ public class PipelinedDirectoryScannerTest
 
             String take;
             do {
-                take = blockQueueApi.take();
+                take = (String) blockQueueApi.take();
                 i++;
                 if (i == 1) first = System.currentTimeMillis() - start;
             }  while (take != PipelinedDirectoryScanner.POISON);

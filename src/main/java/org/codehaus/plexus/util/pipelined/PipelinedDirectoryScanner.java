@@ -19,6 +19,8 @@ import org.codehaus.plexus.util.SelectorUtils;
 import org.codehaus.plexus.util.StringUtils;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class for scanning a directory for files/directories which match certain
@@ -176,9 +178,9 @@ public class PipelinedDirectoryScanner
     {
         this.basedir = basedir;
         this.includes = getIncludes( includes );
-        this.includesSelector = createSelectors( this.includes, isCaseSensitive );
+        this.includesSelector = null; //createSelectors( this.includes, isCaseSensitive );
         this.excludes = getExcludes( excludes );
-        this.excludesSelector = createSelectors( this.excludes, isCaseSensitive );
+        this.excludesSelector = null; //createSelectors( this.excludes, isCaseSensitive );
         this.pipelineApi = pipelineApi;
         if ( basedir == null )
         {
@@ -203,6 +205,45 @@ public class PipelinedDirectoryScanner
             result[i] = selectorFactory.create( selectorPatterns[i], caseSensitive );
         }
         return result;
+    }
+
+    /**
+     * Tests whether or not a given path matches the start of a given
+     * pattern up to the first "**".
+     * <p/>
+     * This is not a general purpose test and should only be used if you
+     * can live with false positives. For example, <code>pattern=**\a</code>
+     * and <code>str=b</code> will yield <code>true</code>.
+     *
+     * @param pattern         The pattern to match against. Must not be
+     *                        <code>null</code>.
+     * @param str             The path to match, as a String. Must not be
+     *                        <code>null</code>.
+     * @param isCaseSensitive Whether or not matching should be performed
+     *                        case sensitively.
+     * @return whether or not a given path matches the start of a given
+     *         pattern up to the first "**".
+     */
+    private static boolean matchPatternStart( String pattern, String str, boolean isCaseSensitive )
+    {
+        return SelectorUtils.matchPatternStart( pattern, str, isCaseSensitive );
+    }
+
+    /**
+     * Tests whether or not a given path matches a given pattern.
+     *
+     * @param pattern         The pattern to match against. Must not be
+     *                        <code>null</code>.
+     * @param str             The path to match, as a String. Must not be
+     *                        <code>null</code>.
+     * @param isCaseSensitive Whether or not matching should be performed
+     *                        case sensitively.
+     * @return <code>true</code> if the pattern matches against the string,
+     *         or <code>false</code> otherwise.
+     */
+    private static boolean matchPath( String pattern, String str, boolean isCaseSensitive )
+    {
+        return SelectorUtils.matchPath( pattern, str, isCaseSensitive );
     }
 
     /**
@@ -287,11 +328,22 @@ public class PipelinedDirectoryScanner
             // throw new IOException( "IO error scanning directory " + dir.getAbsolutePath() );
         }
 
+        List elements = new ArrayList();
         for ( int i = 0; i < newfiles.length; i++ )
         {
             String name = vpath + newfiles[i];
             File file = new File( dir, newfiles[i] );
-            if ( file.isDirectory() )
+            if ( file.isFile() )
+            {
+                if ( isIncluded( name ) )
+                {
+                    if ( !isExcluded( name ) )
+                    {
+                        pipelineApi.addElement( name );
+                    }
+                }
+            }
+            else if ( file.isDirectory() )
             {
                 if ( isIncluded( name ) )
                 {
@@ -315,16 +367,7 @@ public class PipelinedDirectoryScanner
                     }
                 }
             }
-            else if ( file.isFile() )
-            {
-                if ( isIncluded( name ) )
-                {
-                    if ( !isExcluded( name ) )
-                    {
-                        pipelineApi.addElement( name );
-                    }
-                }
-            }
+
         }
     }
 
@@ -407,12 +450,11 @@ public class PipelinedDirectoryScanner
      * @return <code>true</code> when the name matches against at least one
      *         include pattern, or <code>false</code> otherwise.
      */
-    private boolean isIncluded( String name )
+    protected boolean isIncluded( String name )
     {
-        final int size = includesSelector.length;
-        for ( int i = 0; i < size; i++ )
+        for ( int i = 0; i < includes.length; i++ )
         {
-            if ( includesSelector[i].matches( name ) )
+            if ( matchPath( includes[i], name, isCaseSensitive ) )
             {
                 return true;
             }
@@ -428,12 +470,11 @@ public class PipelinedDirectoryScanner
      * @return <code>true</code> when the name matches against the start of at
      *         least one include pattern, or <code>false</code> otherwise.
      */
-    private boolean couldHoldIncluded( String name )
+    protected boolean couldHoldIncluded( String name )
     {
-        final int length = includes.length;
-        for ( int i = 0; i < length; i++ )
+        for ( int i = 0; i < includes.length; i++ )
         {
-            if ( includesSelector[i].matchPatternStart( name ) )
+            if ( matchPatternStart( includes[i], name, isCaseSensitive ) )
             {
                 return true;
             }
@@ -449,12 +490,11 @@ public class PipelinedDirectoryScanner
      * @return <code>true</code> when the name matches against at least one
      *         exclude pattern, or <code>false</code> otherwise.
      */
-    private boolean isExcluded( String name )
+    protected boolean isExcluded( String name )
     {
-        final int length = excludes.length;
-        for ( int i = 0; i < length; i++ )
+        for ( int i = 0; i < excludes.length; i++ )
         {
-            if ( excludesSelector[i].matches( name ) )
+            if ( matchPath( excludes[i], name, isCaseSensitive ) )
             {
                 return true;
             }

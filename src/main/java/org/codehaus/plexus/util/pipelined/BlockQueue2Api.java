@@ -7,10 +7,10 @@ import java.util.List;
  * @author Kristian Rosenvold
  */
 public class BlockQueue2Api
-    extends PipelineApi
+    implements PipelineApi
 {
     List linkedBlockingQueue = new ArrayList(  );
-    protected void addElement( String fileName )
+    public void addElement( String fileName )
     {
         linkedBlockingQueue.add(  fileName );
     }

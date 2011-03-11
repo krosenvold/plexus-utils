@@ -3,7 +3,7 @@ package org.codehaus.plexus.util.pipelined;
 /**
  * @author Kristian Rosenvold
  */
-public abstract class PipelineApi
+interface PipelineApi
 {
-    protected abstract void addElement(String fileName);
+    void addElement(String fileName);
 }
