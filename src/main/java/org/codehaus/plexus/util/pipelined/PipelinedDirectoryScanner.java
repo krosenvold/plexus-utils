@@ -144,19 +144,27 @@ public class PipelinedDirectoryScanner
      */
     private final String[] includes;
 
+    private final Selector[] includesSelector;
+
     /**
      * The patterns for the files to be excluded.
      */
     private final String[] excludes;
 
+    private final Selector[] excludesSelector;
+
     private final PipelineApi pipelineApi;
+
     /**
      * Whether or not the file system should be treated as a case sensitive
      * one.
      */
     private boolean isCaseSensitive = true;
 
-    public static final String POISON ="*POISON*";
+    private final SelectorFactory selectorFactory = new SelectorFactory();
+
+
+    public static final String POISON = "*POISON*";
 
 
     /**
@@ -168,7 +176,9 @@ public class PipelinedDirectoryScanner
     {
         this.basedir = basedir;
         this.includes = getIncludes( includes );
+        this.includesSelector = createSelectors( this.includes, isCaseSensitive );
         this.excludes = getExcludes( excludes );
+        this.excludesSelector = createSelectors( this.excludes, isCaseSensitive );
         this.pipelineApi = pipelineApi;
         if ( basedir == null )
         {
@@ -184,43 +194,15 @@ public class PipelinedDirectoryScanner
         }
     }
 
-    /**
-     * Tests whether or not a given path matches the start of a given
-     * pattern up to the first "**".
-     * <p/>
-     * This is not a general purpose test and should only be used if you
-     * can live with false positives. For example, <code>pattern=**\a</code>
-     * and <code>str=b</code> will yield <code>true</code>.
-     *
-     * @param pattern         The pattern to match against. Must not be
-     *                        <code>null</code>.
-     * @param str             The path to match, as a String. Must not be
-     *                        <code>null</code>.
-     * @param isCaseSensitive Whether or not matching should be performed
-     *                        case sensitively.
-     * @return whether or not a given path matches the start of a given
-     *         pattern up to the first "**".
-     */
-    private static boolean matchPatternStart( String pattern, String str, boolean isCaseSensitive )
+    private Selector[] createSelectors( String[] selectorPatterns, boolean caseSensitive )
     {
-        return SelectorUtils.matchPatternStart( pattern, str, isCaseSensitive );
-    }
-
-    /**
-     * Tests whether or not a given path matches a given pattern.
-     *
-     * @param pattern         The pattern to match against. Must not be
-     *                        <code>null</code>.
-     * @param str             The path to match, as a String. Must not be
-     *                        <code>null</code>.
-     * @param isCaseSensitive Whether or not matching should be performed
-     *                        case sensitively.
-     * @return <code>true</code> if the pattern matches against the string,
-     *         or <code>false</code> otherwise.
-     */
-    private static boolean matchPath( String pattern, String str, boolean isCaseSensitive )
-    {
-        return SelectorUtils.matchPath( pattern, str, isCaseSensitive );
+        final int size = selectorPatterns.length;
+        Selector[] result = new Selector[size];
+        for ( int i = 0; i < size; i++ )
+        {
+            result[i] = selectorFactory.create( selectorPatterns[i], caseSensitive );
+        }
+        return result;
     }
 
     /**
@@ -235,10 +217,11 @@ public class PipelinedDirectoryScanner
     public void scan()
         throws IllegalStateException, InterruptedException
     {
-        Runnable scanner = new Runnable(){
+        Runnable scanner = new Runnable()
+        {
             public void run()
             {
-                scandir( basedir );
+                scandir( basedir, "" );
                 pipelineApi.addElement( POISON );
             }
         };
@@ -251,10 +234,11 @@ public class PipelinedDirectoryScanner
     public void scanThreaded()
         throws IllegalStateException, InterruptedException
     {
-        Runnable scanner = new Runnable(){
+        Runnable scanner = new Runnable()
+        {
             public void run()
             {
-                scandir( basedir );
+                scandir( basedir, "" );
                 pipelineApi.addElement( POISON );
             }
         };
@@ -270,8 +254,9 @@ public class PipelinedDirectoryScanner
      * is found, it is scanned recursively.
      *
      * @param dir   The directory to scan. Must not be <code>null</code>.
+     * @param vpath the path part
      */
-    private void scandir( File dir)
+    private void scandir( File dir, String vpath )
     {
         String[] newfiles = dir.list();
 
@@ -302,23 +287,32 @@ public class PipelinedDirectoryScanner
             // throw new IOException( "IO error scanning directory " + dir.getAbsolutePath() );
         }
 
-        final int length = newfiles.length;
-        for ( int i = 0; i < length; i++ )
+        for ( int i = 0; i < newfiles.length; i++ )
         {
-            String name = newfiles[i];
-            File file = new File( dir, name );
-            if ( file.isDirectory() && couldHoldIncluded( name ))
+            String name = vpath + newfiles[i];
+            File file = new File( dir, newfiles[i] );
+            if ( file.isDirectory() )
             {
                 if ( isIncluded( name ) )
                 {
-                    if ( !isExcluded( name )   )
+                    if ( !isExcluded( name ) )
                     {
-                       scandir( file );
+                        scandir( file, name + File.separator );
+                    }
+                    else
+                    {
+                        if ( couldHoldIncluded( name ) )
+                        {
+                            scandir( file, name + File.separator );
+                        }
                     }
                 }
                 else
                 {
-                    scandir( file);
+                    if ( couldHoldIncluded( name ) )
+                    {
+                        scandir( file, name + File.separator );
+                    }
                 }
             }
             else if ( file.isFile() )
@@ -415,9 +409,10 @@ public class PipelinedDirectoryScanner
      */
     private boolean isIncluded( String name )
     {
-        for ( int i = 0; i < includes.length; i++ )
+        final int size = includesSelector.length;
+        for ( int i = 0; i < size; i++ )
         {
-            if ( matchPath( includes[i], name, isCaseSensitive ) )
+            if ( includesSelector[i].matches( name ) )
             {
                 return true;
             }
@@ -435,9 +430,10 @@ public class PipelinedDirectoryScanner
      */
     private boolean couldHoldIncluded( String name )
     {
-        for ( int i = 0; i < includes.length; i++ )
+        final int length = includes.length;
+        for ( int i = 0; i < length; i++ )
         {
-            if ( matchPatternStart( includes[i], name, isCaseSensitive ) )
+            if ( includesSelector[i].matchPatternStart( name ) )
             {
                 return true;
             }
@@ -455,15 +451,14 @@ public class PipelinedDirectoryScanner
      */
     private boolean isExcluded( String name )
     {
-        for ( int i = 0; i < excludes.length; i++ )
+        final int length = excludes.length;
+        for ( int i = 0; i < length; i++ )
         {
-            if ( matchPath( excludes[i], name, isCaseSensitive ) )
+            if ( excludesSelector[i].matches( name ) )
             {
                 return true;
             }
         }
         return false;
     }
-
-
 }

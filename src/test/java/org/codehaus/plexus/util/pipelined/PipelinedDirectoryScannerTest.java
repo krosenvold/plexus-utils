@@ -17,14 +17,14 @@ public class PipelinedDirectoryScannerTest
         throws Exception
     {
         final File file = new File( "/home/kristian/lsrc" );
+        final int expected = scanOriginal( file ).length;
+        final int expected2 = expected + 1;
         for ( int i = 0; i < 10; i++ )
         {
-            final int expected = 220831;
-            final int expected2 = expected + 1;
             assertEquals( expected, scanOriginal( file ).length );
             assertEquals( expected2, scanNewBDQ( file ) );
-            //assertEquals( expected2, scanNew( file ) );
-            assertEquals( expected2, scanNewBQ( file ) );
+            scanNewNonThreaded(file);
+            scanNewBQ( file );
         }
 
     }
@@ -81,6 +81,27 @@ public class PipelinedDirectoryScannerTest
         finally
         {
             System.out.println( ", NEWBQ(" + first + "=" + ( System.currentTimeMillis() - start ) );
+        }
+    }
+    private int scanNewNonThreaded( File basedir )
+        throws InterruptedException
+    {
+        PipelineApi blockQueueApi = new BlockQueue2Api();
+        int i = 0;
+        long first = 0;
+        long start = System.currentTimeMillis();
+        try
+        {
+            PipelinedDirectoryScanner pipelinedDirectoryScanner =
+                new PipelinedDirectoryScanner( basedir, null, null, blockQueueApi);
+            pipelinedDirectoryScanner.scan();
+
+
+            return i;
+        }
+        finally
+        {
+            System.out.print( ", nonThrNew(" + first + "=" + ( System.currentTimeMillis() - start ) );
         }
     }
 
