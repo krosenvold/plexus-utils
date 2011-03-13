@@ -10,10 +10,15 @@ import java.util.List;
 public class BlockQueue2Api
     implements PipelineApi
 {
-    List linkedBlockingQueue = Collections.synchronizedList( new ArrayList(  ));
-    public void addElement( String fileName )
+    List linkedBlockingQueue = new ArrayList(  );
+    public synchronized void addElement( String fileName )
     {
         linkedBlockingQueue.add(  fileName );
+    }
+
+    public synchronized void addElements( List elements )
+    {
+            linkedBlockingQueue.addAll( elements );
     }
 
     private int pos;

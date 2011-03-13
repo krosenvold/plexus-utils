@@ -1,5 +1,6 @@
 package org.codehaus.plexus.util.pipelined;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -11,6 +12,11 @@ public class BlockQueueApi implements PipelineApi
     public void addElement( String fileName )
     {
         linkedBlockingQueue.add(  fileName );
+    }
+
+    public void addElements( List elements )
+    {
+        linkedBlockingQueue.addAll(  elements);
     }
 
     public String take()

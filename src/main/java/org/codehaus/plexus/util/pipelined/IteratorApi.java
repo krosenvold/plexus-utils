@@ -1,6 +1,7 @@
 package org.codehaus.plexus.util.pipelined;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -28,6 +29,11 @@ public class IteratorApi
         {
             elements.notify();
         }
+    }
+
+    public void addElements( List elements )
+    {
+        this.elements.addAll(  elements );
     }
 
     public Iterator iterator()

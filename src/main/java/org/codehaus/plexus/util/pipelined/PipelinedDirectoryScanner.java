@@ -201,7 +201,7 @@ public class PipelinedDirectoryScanner
             throw new IllegalStateException( "basedir " + basedir + " is not a directory" );
         }
 
-        this.executor = Executors.newFixedThreadPool( 24 );
+        this.executor = Executors.newFixedThreadPool( 12 );
 
     }
 
@@ -308,15 +308,17 @@ public class PipelinedDirectoryScanner
      * @param vpath the path part
      */
     private void asynchscandir( File dir, String vpath ){
-        scandir(  dir, vpath );
+        List elementsFound = new ArrayList();
+        scandir(  dir, vpath, elementsFound );
+        pipelineApi.addElements(  elementsFound );
         if (threadsStarted.decrementAndGet() == 0){
             pipelineApi.addElement( POISON );
-        };
+        }
     }
 
 
 
-    private void scandir( File dir, String vpath )
+    private void scandir( File dir, String vpath, List elementsFound )
     {
         String[] newfiles = dir.list();
 
@@ -359,7 +361,7 @@ public class PipelinedDirectoryScanner
                 {
                     if ( !isExcluded( name ) )
                     {
-                        pipelineApi.addElement( name );
+                        elementsFound.add( name );
                     }
                 }
             }
@@ -387,7 +389,7 @@ public class PipelinedDirectoryScanner
         }
         if ( firstDir != null )
         {
-            scandir( firstDir, firstName + File.separator );
+            scandir( firstDir, firstName + File.separator, elementsFound );
         }
 
     }
