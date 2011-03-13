@@ -21,6 +21,9 @@ import org.codehaus.plexus.util.StringUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Class for scanning a directory for files/directories which match certain
@@ -157,6 +160,8 @@ public class PipelinedDirectoryScanner
 
     private final PipelineApi pipelineApi;
 
+    private final AtomicInteger threadsStarted = new AtomicInteger( 1 );
+
     /**
      * Whether or not the file system should be treated as a case sensitive
      * one.
@@ -165,6 +170,7 @@ public class PipelinedDirectoryScanner
 
     private final SelectorFactory selectorFactory = new SelectorFactory();
 
+    private final ExecutorService executor;
 
     public static final String POISON = "*POISON*";
 
@@ -194,6 +200,9 @@ public class PipelinedDirectoryScanner
         {
             throw new IllegalStateException( "basedir " + basedir + " is not a directory" );
         }
+
+        this.executor = Executors.newFixedThreadPool( 24 );
+
     }
 
     private Selector[] createSelectors( String[] selectorPatterns, boolean caseSensitive )
@@ -262,14 +271,16 @@ public class PipelinedDirectoryScanner
         {
             public void run()
             {
-                scandir( basedir, "" );
-                pipelineApi.addElement( POISON );
+                asynchscandir( basedir, "" );
             }
         };
 
         final Thread thread = new Thread( scanner );
         thread.start();
         thread.join();
+        while (threadsStarted.get() > 0){
+            Thread.sleep(10);
+        }
     }
 
     public void scanThreaded()
@@ -279,8 +290,7 @@ public class PipelinedDirectoryScanner
         {
             public void run()
             {
-                scandir( basedir, "" );
-                pipelineApi.addElement( POISON );
+                asynchscandir( basedir, "" );
             }
         };
 
@@ -297,6 +307,15 @@ public class PipelinedDirectoryScanner
      * @param dir   The directory to scan. Must not be <code>null</code>.
      * @param vpath the path part
      */
+    private void asynchscandir( File dir, String vpath ){
+        scandir(  dir, vpath );
+        if (threadsStarted.decrementAndGet() == 0){
+            pipelineApi.addElement( POISON );
+        };
+    }
+
+
+
     private void scandir( File dir, String vpath )
     {
         String[] newfiles = dir.list();
@@ -328,7 +347,8 @@ public class PipelinedDirectoryScanner
             // throw new IOException( "IO error scanning directory " + dir.getAbsolutePath() );
         }
 
-        List elements = new ArrayList();
+        File firstDir = null;
+        String firstName = null;
         for ( int i = 0; i < newfiles.length; i++ )
         {
             String name = vpath + newfiles[i];
@@ -345,32 +365,48 @@ public class PipelinedDirectoryScanner
             }
             else if ( file.isDirectory() )
             {
-                if ( isIncluded( name ) )
+                final boolean couldHoldIncluded = couldHoldIncluded( name );
+                if ( isIncluded( name ) || couldHoldIncluded )
                 {
-                    if ( !isExcluded( name ) )
+                    if ( !isExcluded( name ) || couldHoldIncluded )
                     {
-                        scandir( file, name + File.separator );
-                    }
-                    else
-                    {
-                        if ( couldHoldIncluded( name ) )
+                        if ( firstDir == null )
                         {
-                            scandir( file, name + File.separator );
+                            firstDir = file;
+                            firstName = name;
+                        }
+                        else
+                        {
+                            final AsynchScanner target = new AsynchScanner( file, name + File.separator );
+                            executor.submit(  target );
+                            threadsStarted.incrementAndGet();
                         }
                     }
                 }
-                else
-                {
-                    if ( couldHoldIncluded( name ) )
-                    {
-                        scandir( file, name + File.separator );
-                    }
-                }
             }
-
         }
+        if ( firstDir != null )
+        {
+            scandir( firstDir, firstName + File.separator );
+        }
+
     }
 
+    class AsynchScanner implements Runnable {
+        File dir;
+        String file;
+
+        AsynchScanner( File dir, String file )
+        {
+            this.dir = dir;
+            this.file = file;
+        }
+
+        public void run()
+        {
+            asynchscandir( dir, file);
+        }
+    }
     private String[] getIncludes( String[] includes )
     {
         final String[] inc;

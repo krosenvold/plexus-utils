@@ -1,6 +1,7 @@
 package org.codehaus.plexus.util.pipelined;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -9,7 +10,7 @@ import java.util.List;
 public class BlockQueue2Api
     implements PipelineApi
 {
-    List linkedBlockingQueue = new ArrayList(  );
+    List linkedBlockingQueue = Collections.synchronizedList( new ArrayList(  ));
     public void addElement( String fileName )
     {
         linkedBlockingQueue.add(  fileName );
