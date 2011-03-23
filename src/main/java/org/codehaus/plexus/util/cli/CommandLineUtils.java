@@ -152,9 +152,16 @@ public abstract class CommandLineUtils
             inputFeeder = new StreamFeeder( systemIn, p.getOutputStream() );
         }
 
-        StreamPumper outputPumper = new StreamPumper( p.getInputStream(), systemOut );
+        boolean isByteStreamInput = systemIn instanceof ByteStreamConsumer;
+        AbstractStreamHandler outputPumper = isByteStreamInput
+            ? (AbstractStreamHandler) new ByteStreamPumper( p.getInputStream(), (ByteStreamConsumer) systemOut )
+            : new StreamPumper( p.getInputStream(), systemOut );
 
-        StreamPumper errorPumper = new StreamPumper( p.getErrorStream(), systemErr );
+
+        boolean isByteStreamError = systemErr instanceof ByteStreamConsumer;
+        AbstractStreamHandler errorPumper = isByteStreamError
+            ? (AbstractStreamHandler) new ByteStreamPumper( p.getInputStream(), (ByteStreamConsumer) systemErr )
+            : new StreamPumper( p.getErrorStream(), systemErr );
 
         if ( inputFeeder != null )
         {
@@ -192,12 +199,12 @@ public abstract class CommandLineUtils
 
             processes.remove( new Long( cl.getPid() ) );
 
-            if ( outputPumper.getException() != null )
+            if ( outputPumper.hasException() )
             {
                 throw new CommandLineException( "Error inside systemOut parser", outputPumper.getException() );
             }
 
-            if ( errorPumper.getException() != null )
+            if ( errorPumper.hasException() )
             {
                 throw new CommandLineException( "Error inside systemErr parser", errorPumper.getException() );
             }
@@ -235,8 +242,8 @@ public abstract class CommandLineUtils
         }
     }
 
-    private static void waitForAllPumpers( StreamFeeder inputFeeder, StreamPumper outputPumper,
-                                           StreamPumper errorPumper )
+    private static void waitForAllPumpers( StreamFeeder inputFeeder, AbstractStreamHandler outputPumper,
+                                           AbstractStreamHandler errorPumper )
         throws InterruptedException
     {
         if ( inputFeeder != null )

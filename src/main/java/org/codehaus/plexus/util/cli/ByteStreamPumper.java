@@ -87,37 +87,22 @@ import java.io.PrintWriter;
  * @version $Id$
  * @since June 11, 2001
  */
-public class StreamPumper
+public class ByteStreamPumper
     extends AbstractStreamHandler
 {
     private final BufferedReader in;
 
-    private final StreamConsumer consumer;
+    private final InputStream inputStream;
 
-    private final PrintWriter out;
+    private final ByteStreamConsumer consumer;
 
     private static final int SIZE = 1024;
 
-    public StreamPumper( InputStream in )
-    {
-        this( in, (StreamConsumer) null );
-    }
 
-    public StreamPumper( InputStream in, StreamConsumer consumer )
+    public ByteStreamPumper( InputStream in, ByteStreamConsumer consumer )
     {
-        this( in, null, consumer );
-    }
-
-    public StreamPumper( InputStream in, PrintWriter writer )
-    {
-        this( in, writer, null );
-    }
-
-    public StreamPumper( InputStream in, PrintWriter writer, StreamConsumer consumer )
-    {
-
+        this.inputStream = in;
         this.in = new BufferedReader( new InputStreamReader( in ), SIZE );
-        this.out = writer;
         this.consumer = consumer;
     }
 
@@ -125,31 +110,32 @@ public class StreamPumper
     {
         try
         {
-            for ( String line = in.readLine(); line != null; line = in.readLine() )
+            int read;
+            do
             {
-                try
+                int available = Math.max( 1, inputStream.available());
+                byte[] bytes = new byte[available];
+                read = inputStream.read( bytes );
+                if ( read > 0 )
                 {
-                    if ( !hasException() )
+                    try
                     {
-                        consumeLine( line );
+                        if ( !hasException())
+                        {
+                            consumeLine( bytes, read );
+                        }
+                    }
+                    catch ( Exception t )
+                    {
+                        setException( t);
                     }
                 }
-                catch ( Exception t )
-                {
-                    setException(  t);
-                }
-
-                if ( out != null )
-                {
-                    out.println( line );
-
-                    out.flush();
-                }
             }
+            while ( read >= 0 );
         }
         catch ( IOException e )
         {
-            setException(  e);
+            setException( e );
         }
         finally
         {
@@ -164,24 +150,15 @@ public class StreamPumper
         }
     }
 
-    public void flush()
-    {
-        if ( out != null )
-        {
-            out.flush();
-        }
-    }
-
     public void close()
     {
-        IOUtil.close( out );
     }
 
-    private void consumeLine( String line )
+    private void consumeLine( byte[] bytes, int read)
     {
         if ( consumer != null && !isDisabled() )
         {
-            consumer.consumeLine( line );
+            consumer.consumeBytes( bytes, read);
         }
     }
 }

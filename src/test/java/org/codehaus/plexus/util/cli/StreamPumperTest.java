@@ -126,7 +126,7 @@ public class StreamPumperTest
         pumper.run();
         assertEquals( "input stream was not fully consumed, producer deadlocks", gis.size, gis.read );
         assertTrue( gis.closed );
-        assertNotNull( pumper.getException() );
+        assertTrue( pumper.hasException() );
     }
 
     static class GeneratorInputStream

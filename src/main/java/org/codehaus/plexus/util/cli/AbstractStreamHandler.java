@@ -19,12 +19,14 @@ package org.codehaus.plexus.util.cli;
 /**
  * @author <a href="mailto:kristian.rosenvold@gmail.com">Kristian Rosenvold</a>
  */
-public class AbstractStreamHandler
+public abstract class AbstractStreamHandler
     extends Thread
 {
     private boolean done;
 
     private volatile boolean disabled;
+
+    private volatile Exception exception = null;
 
     public boolean isDone()
     {
@@ -55,5 +57,22 @@ public class AbstractStreamHandler
     {
         done = true;
     }
+
+    protected void setException( Exception exception )
+    {
+        this.exception = exception;
+    }
+
+    public Exception getException()
+    {
+        return exception;
+    }
+
+    public boolean hasException()
+    {
+        return exception != null;
+    }
+
+    public abstract void close();
 
 }
