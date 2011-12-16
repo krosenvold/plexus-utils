@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,7 +44,7 @@ public class DirScanner
 
     private final ExecutorService executor;
 
-    private final Semaphore sem = new Semaphore( 1 );
+    private final CountDownLatch sem = new CountDownLatch( 1 );
 
     private final AtomicInteger count = new AtomicInteger();
 
@@ -82,7 +83,6 @@ public class DirScanner
     public Collection<ScannedFile> scan( final File dir )
         throws InterruptedException, ExecutionException
     {
-        sem.acquire();
         executor.submit( new Runnable()
         {
             public void run()
@@ -90,7 +90,7 @@ public class DirScanner
                 innerScan( dir );
             }
         } );
-        sem.acquire();
+        sem.await();
 
         List<ScannedFile> ret = new ArrayList<ScannedFile>();
         for ( List<ScannedFile> files : listOfLists )
@@ -121,7 +121,7 @@ public class DirScanner
         }
         if ( count.decrementAndGet() < 0 )
         {
-            sem.release();
+            sem.countDown();
         }
     }
 
