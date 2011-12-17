@@ -27,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -50,21 +49,16 @@ public class DirScanner
 
     private final List<List<ScannedFile>> listOfLists = new ArrayList<List<ScannedFile>>();
 
-    private final class ThreadWithList
+    private final class ThreadList
         extends Thread
     {
         private final List<ScannedFile> files;
 
-        public ThreadWithList( Runnable r )
+        public ThreadList( Runnable r )
         {
             super( r );
             files = new ArrayList<ScannedFile>();
             listOfLists.add( files );
-        }
-
-        public List<ScannedFile> files()
-        {
-            return this.files;
         }
     }
 
@@ -75,7 +69,7 @@ public class DirScanner
         {
             public Thread newThread( Runnable r )
             {
-                return new ThreadWithList( r );
+                return new ThreadList( r );
             }
         } );
     }
@@ -102,14 +96,19 @@ public class DirScanner
 
     private void innerScan( File dir )
     {
-        final List<ScannedFile> threadFiles = ( (ThreadWithList) Thread.currentThread() ).files;
-        for ( final File file : dir.listFiles() )
+        final List<ScannedFile> threadFiles = ( (ThreadList) Thread.currentThread() ).files;
+        File[] files = dir.listFiles();
+        if (files == null){
+            files = new File[]{};
+        }
+        for ( final File file : files )
         {
             final ScannedFile scannedFile = new ScannedFile( file );
             threadFiles.add( scannedFile );
             if ( scannedFile.isDirectory() )
             {
                 count.incrementAndGet();
+
                 executor.submit( new Runnable()
                 {
                     public void run()
