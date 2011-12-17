@@ -26,14 +26,24 @@ public class DirScannerTest
         for ( int i = 0; i < 10; i++ )
         {
             long start = System.currentTimeMillis();
-            DirScanner.scanDir( file, scannerOptions );
+            final Iterable<ScannedFile> scannedFiles = DirScanner.scanDir( file, scannerOptions );
+            int j = 0;
+            for ( ScannedFile scannedFile : scannedFiles )
+            {
+                j = scannedFile.getFile().getName().length();
+            }
             final long fastElapsed = System.currentTimeMillis() - start;
-            System.out.print("FastScanner" + fastElapsed );
+            System.out.print( j + "FastScanner" + fastElapsed );
 
             start = System.currentTimeMillis();
             directoryScanner.scan();
+            int k = 0;
+            for ( String scannedFile : directoryScanner.getIncludedFiles() )
+            {
+                k = scannedFile.length();
+            }
             final long slowElapsed = System.currentTimeMillis() - start;
-            System.out.print(" OldScanner" + slowElapsed );
+            System.out.print(k + " OldScanner" + slowElapsed );
 
             final long diff = slowElapsed - fastElapsed;
             System.out.println( "Time diff " + diff + ((diff < 0) ? " old faster" : ""));

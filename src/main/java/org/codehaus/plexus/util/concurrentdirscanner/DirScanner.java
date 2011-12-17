@@ -21,14 +21,16 @@ package org.codehaus.plexus.util.concurrentdirscanner;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * @author <a href="mailto:kristian.rosenvold@gmail.com">Kristian Rosenvold</a>
@@ -43,38 +45,31 @@ public class DirScanner
 
     private final ExecutorService executor;
 
-    private final CountDownLatch sem = new CountDownLatch( 1 );
-
     private final AtomicInteger count = new AtomicInteger();
 
-    private final List<List<ScannedFile>> listOfLists = new ArrayList<List<ScannedFile>>();
+    private final LinkedBlockingQueue<ScannedFile> result = new LinkedBlockingQueue<ScannedFile>();
+
+    private final ScannedFile posion = new ScannedFile( new File( "." ) );
 
     private final class ThreadList
         extends Thread
     {
-        private final List<ScannedFile> files;
+        private final List<ScannedFile> filesInThisThread;
 
         public ThreadList( Runnable r )
         {
             super( r );
-            files = new ArrayList<ScannedFile>();
-            listOfLists.add( files );
+            filesInThisThread = new ArrayList<ScannedFile>();
         }
     }
 
-    public DirScanner( ScannerOptions scannerOptions)
+    public DirScanner( ScannerOptions scannerOptions )
     {
         this.scannerOptions = scannerOptions;
-        executor = Executors.newFixedThreadPool( scannerOptions.getThreads(), new ThreadFactory()
-        {
-            public Thread newThread( Runnable r )
-            {
-                return new ThreadList( r );
-            }
-        } );
+        executor = Executors.newFixedThreadPool( scannerOptions.getThreads() );
     }
 
-    public Collection<ScannedFile> scan( final File dir )
+    public Iterable<ScannedFile> scan( final File dir )
         throws InterruptedException, ExecutionException
     {
         executor.submit( new Runnable()
@@ -84,27 +79,66 @@ public class DirScanner
                 innerScan( dir );
             }
         } );
-        sem.await();
 
-        List<ScannedFile> ret = new ArrayList<ScannedFile>();
-        for ( List<ScannedFile> files : listOfLists )
+        return new Iterable<ScannedFile>()
         {
-            ret.addAll( files );
+            public Iterator<ScannedFile> iterator()
+            {
+                return new ScannedFileIterator();
+            }
+        };
+    }
+
+    private class ScannedFileIterator
+        implements Iterator<ScannedFile>
+    {
+        private List<ScannedFile> currentList = null;
+
+        private int currentPos = -1;
+
+        private int outerPos = -1;
+
+        ScannedFile next = null;
+
+        public boolean hasNext()
+        {
+            try
+            {
+                next = result.take();
+                return posion != next;
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
-        return ret;
+
+        public ScannedFile next()
+        {
+            if ( posion == next )
+            {
+                throw new NoSuchElementException( "We saw poison" );
+            }
+            return next;
+        }
+
+        public void remove()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     private void innerScan( File dir )
     {
-        final List<ScannedFile> threadFiles = ( (ThreadList) Thread.currentThread() ).files;
         File[] files = dir.listFiles();
-        if (files == null){
-            files = new File[]{};
+        if ( files == null )
+        {
+            files = new File[]{ };
         }
         for ( final File file : files )
         {
             final ScannedFile scannedFile = new ScannedFile( file );
-            threadFiles.add( scannedFile );
+            result.add( scannedFile );
             if ( scannedFile.isDirectory() )
             {
                 count.incrementAndGet();
@@ -120,7 +154,7 @@ public class DirScanner
         }
         if ( count.decrementAndGet() < 0 )
         {
-            sem.countDown();
+            result.add( posion );
         }
     }
 
@@ -132,14 +166,14 @@ public class DirScanner
     public static Iterable<ScannedFile> scanDir( File dir, ScannerOptions scannerOptions )
         throws InterruptedException, ExecutionException
     {
-        DirScanner scanner = new DirScanner( scannerOptions);
+        DirScanner scanner = new DirScanner( scannerOptions );
         try
         {
             return scanner.scan( dir );
         }
         finally
         {
-            scanner.close();
+          //  scanner.close();
         }
     }
 }
