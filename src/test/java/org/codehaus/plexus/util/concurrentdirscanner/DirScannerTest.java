@@ -1,10 +1,9 @@
 package org.codehaus.plexus.util.concurrentdirscanner;
 
-import junit.framework.TestCase;
+import java.io.File;
 import org.codehaus.plexus.util.DirectoryScanner;
 
-import java.io.File;
-import java.util.Collection;
+import junit.framework.TestCase;
 
 /**
  * @author Kristian Rosenvold
@@ -16,21 +15,29 @@ public class DirScannerTest
     public void testSimpleScan()
         throws Exception
     {
-        File file = new File("/home/kristian/lsrc/maven-surefire");
-        ScannerOptions  scannerOptions = new ScannerOptions(  );
+        File file = new File( "/home/kristian/lsrc/maven-surefire" );
+        ScannerOptions scannerOptions = new ScannerOptions();
         DirScanner.scanDir( file, scannerOptions );
 
         DirectoryScanner directoryScanner = new DirectoryScanner();
-        directoryScanner.setBasedir(  file );
+        directoryScanner.setBasedir( file );
         directoryScanner.scan();
-        
-        long start = System.currentTimeMillis();
-        DirScanner.scanDir( file, scannerOptions );
-        System.out.println("FastScanner" + (System.currentTimeMillis() - start));
 
-        start = System.currentTimeMillis();
-        directoryScanner.scan();
-        System.out.println("OldScanner" + (System.currentTimeMillis() - start));
+        for ( int i = 0; i < 10; i++ )
+        {
+            long start = System.currentTimeMillis();
+            DirScanner.scanDir( file, scannerOptions );
+            final long fastElapsed = System.currentTimeMillis() - start;
+            System.out.print("FastScanner" + fastElapsed );
+
+            start = System.currentTimeMillis();
+            directoryScanner.scan();
+            final long slowElapsed = System.currentTimeMillis() - start;
+            System.out.print(" OldScanner" + slowElapsed );
+
+            final long diff = slowElapsed - fastElapsed;
+            System.out.println( "Time diff " + diff + ((diff < 0) ? " old faster" : ""));
+        }
     }
 
     public void testScan()
