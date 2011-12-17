@@ -138,7 +138,6 @@ public class DirScanner
         for ( final File file : files )
         {
             final ScannedFile scannedFile = new ScannedFile( file );
-            result.add( scannedFile );
             if ( scannedFile.isDirectory() )
             {
                 count.incrementAndGet();
@@ -150,6 +149,8 @@ public class DirScanner
                         innerScan( file );
                     }
                 } );
+            } else {
+                result.add( scannedFile );
             }
         }
         if ( count.decrementAndGet() < 0 )
