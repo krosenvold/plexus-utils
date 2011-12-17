@@ -5,7 +5,7 @@ package org.codehaus.plexus.util.concurrentdirscanner;
  */
 public class ScannerOptions
 {
-    private int threads = 2;
+    private int threads = 3;
 
     private String[] includes;
 

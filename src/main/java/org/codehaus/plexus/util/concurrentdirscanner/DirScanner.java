@@ -51,25 +51,13 @@ public class DirScanner
 
     private final ScannedFile posion = new ScannedFile( new File( "." ) );
 
-    private final class ThreadList
-        extends Thread
-    {
-        private final List<ScannedFile> filesInThisThread;
-
-        public ThreadList( Runnable r )
-        {
-            super( r );
-            filesInThisThread = new ArrayList<ScannedFile>();
-        }
-    }
-
     public DirScanner( ScannerOptions scannerOptions )
     {
         this.scannerOptions = scannerOptions;
         executor = Executors.newFixedThreadPool( scannerOptions.getThreads() );
     }
 
-    public Iterable<ScannedFile> scan( final File dir )
+    public void scan( final File dir )
         throws InterruptedException, ExecutionException
     {
         executor.submit( new Runnable()
@@ -80,51 +68,17 @@ public class DirScanner
             }
         } );
 
-        return new Iterable<ScannedFile>()
-        {
-            public Iterator<ScannedFile> iterator()
-            {
-                return new ScannedFileIterator();
-            }
-        };
     }
 
-    private class ScannedFileIterator
-        implements Iterator<ScannedFile>
-    {
-        private List<ScannedFile> currentList = null;
-
-        private int currentPos = -1;
-
-        private int outerPos = -1;
-
-        ScannedFile next = null;
-
-        public boolean hasNext()
+    public ScannedFile take(){
+        try
         {
-            try
-            {
-                next = result.take();
-                return posion != next;
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
+            final ScannedFile take = result.take();
+            return posion != take ? take : null;
         }
-
-        public ScannedFile next()
+        catch ( InterruptedException e )
         {
-            if ( posion == next )
-            {
-                throw new NoSuchElementException( "We saw poison" );
-            }
-            return next;
-        }
-
-        public void remove()
-        {
-            throw new NotImplementedException();
+            throw new RuntimeException(  e );
         }
     }
 
@@ -164,17 +118,4 @@ public class DirScanner
         executor.shutdown();
     }
 
-    public static Iterable<ScannedFile> scanDir( File dir, ScannerOptions scannerOptions )
-        throws InterruptedException, ExecutionException
-    {
-        DirScanner scanner = new DirScanner( scannerOptions );
-        try
-        {
-            return scanner.scan( dir );
-        }
-        finally
-        {
-          //  scanner.close();
-        }
-    }
 }

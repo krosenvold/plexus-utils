@@ -17,20 +17,28 @@ public class DirScannerTest
     {
         File file = new File( "/home/kristian/lsrc/maven-surefire" );
         ScannerOptions scannerOptions = new ScannerOptions();
-        DirScanner.scanDir( file, scannerOptions );
+        DirScanner scanner0 = new DirScanner( scannerOptions );
+        scanner0.scan( file );
 
-        DirectoryScanner directoryScanner = new DirectoryScanner();
-        directoryScanner.setBasedir( file );
-        directoryScanner.scan();
+        DirectoryScanner directoryScanner1 = new DirectoryScanner();
+        directoryScanner1.setBasedir( file );
+        directoryScanner1.scan();
 
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < 6; i++ )
         {
             long start = System.currentTimeMillis();
-            final Iterable<ScannedFile> scannedFiles = DirScanner.scanDir( file, scannerOptions );
+
             int j = 0;
             int count = 0;
-            for ( ScannedFile scannedFile : scannedFiles )
-            {
+            DirScanner scanner1 = new DirScanner( scannerOptions );
+            scanner1.scan(  file );
+            ScannedFile scannedFile;
+            long startat = System.currentTimeMillis();
+            while  ((scannedFile = scanner1.take())!=null){
+                if ( j == 0 )
+                {
+                    System.out.println("First file available after " + (System.currentTimeMillis() - startat));
+                } 
                 j += scannedFile.getFile().getName().length();
                 count++;
             }
@@ -38,16 +46,16 @@ public class DirScannerTest
             System.out.print( count + "FastScanner(" + j + ")" + fastElapsed );
 
             start = System.currentTimeMillis();
-            directoryScanner.scan();
+            directoryScanner1.scan();
             int k = 0; 
             count = 0;
-            for ( String scannedFile : directoryScanner.getIncludedFiles() )
+            for ( String sscannedFile : directoryScanner1.getIncludedFiles() )
             {
-                k += scannedFile.length();
+                k += sscannedFile.length();
                 count++;
             }
             final long slowElapsed = System.currentTimeMillis() - start;
-            System.out.print("/" + count + " OldScanner(" +k + ")" + slowElapsed );
+            System.out.print( "/" + count + " OldScanner(" + k + ")" + slowElapsed );
 
             final long diff = slowElapsed - fastElapsed;
             System.out.println( "Time diff " + diff + ((diff < 0) ? " old faster" : ""));
