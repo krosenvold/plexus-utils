@@ -23,8 +23,8 @@ public class ScannerOptions
 
     public ScannerOptions(  )
     {
-        this.includes = new String[]{};
-        this.excludes = new String[]{};
+        this.includes = null;
+        this.excludes = null;
     }
     
     public int getThreads()
@@ -51,4 +51,19 @@ public class ScannerOptions
     {
         return followSymLinks;
     }
+
+    public void setupDefaultFilters()
+    {
+        if ( includes == null )
+        {
+            // No includes supplied, so set it to 'matches all'
+            includes = new String[1];
+            includes[0] = "**";
+        }
+        if ( excludes == null )
+        {
+            excludes = new String[0];
+        }
+    }
+
 }

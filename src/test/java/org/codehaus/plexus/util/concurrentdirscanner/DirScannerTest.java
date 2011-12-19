@@ -31,15 +31,12 @@ public class DirScannerTest
             int j = 0;
             int count = 0;
             DirScanner scanner1 = new DirScanner( scannerOptions );
-            scanner1.scan(  file );
+            final Iterable<ScannedFile> scan = scanner1.scan( file );
             ScannedFile scannedFile;
             long startat = System.currentTimeMillis();
-            while  ((scannedFile = scanner1.take())!=null){
-                if ( j == 0 )
-                {
-                    System.out.println("First file available after " + (System.currentTimeMillis() - startat));
-                } 
-                j += scannedFile.getFile().getName().length();
+            for ( ScannedFile scannedFile1 : scan )
+            {
+                j += scannedFile1.getFile().getName().length();
                 count++;
             }
             final long fastElapsed = System.currentTimeMillis() - start;
@@ -47,7 +44,7 @@ public class DirScannerTest
 
             start = System.currentTimeMillis();
             directoryScanner1.scan();
-            int k = 0; 
+            int k = 0;
             count = 0;
             for ( String sscannedFile : directoryScanner1.getIncludedFiles() )
             {
@@ -58,7 +55,7 @@ public class DirScannerTest
             System.out.print( "/" + count + " OldScanner(" + k + ")" + slowElapsed );
 
             final long diff = slowElapsed - fastElapsed;
-            System.out.println( "Time diff " + diff + ((diff < 0) ? " old faster" : ""));
+            System.out.println( "Time diff " + diff + ( ( diff < 0 ) ? " old faster" : "" ) );
         }
     }
 

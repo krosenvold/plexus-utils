@@ -20,11 +20,8 @@ package org.codehaus.plexus.util.concurrentdirscanner;
  */
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -45,7 +42,7 @@ public class DirScanner
 
     private final ExecutorService executor;
 
-    private final AtomicInteger count = new AtomicInteger();
+    private final AtomicInteger scheduledCount = new AtomicInteger();
 
     private final LinkedBlockingQueue<ScannedFile> result = new LinkedBlockingQueue<ScannedFile>();
 
@@ -54,11 +51,11 @@ public class DirScanner
     public DirScanner( ScannerOptions scannerOptions )
     {
         this.scannerOptions = scannerOptions;
+        scannerOptions.setupDefaultFilters();
         executor = Executors.newFixedThreadPool( scannerOptions.getThreads() );
     }
 
-    public void scan( final File dir )
-        throws InterruptedException, ExecutionException
+    public Iterable<ScannedFile> scan( final File dir )
     {
         executor.submit( new Runnable()
         {
@@ -68,17 +65,45 @@ public class DirScanner
             }
         } );
 
+        return new Iterable<ScannedFile>()
+        {
+            public Iterator<ScannedFile> iterator()
+            {
+                return new ScannedFileIterator();
+            }
+        };
     }
 
-    public ScannedFile take(){
-        try
+    private class ScannedFileIterator
+        implements Iterator<ScannedFile>
+    {
+        ScannedFile next = null;
+
+        public boolean hasNext()
         {
-            final ScannedFile take = result.take();
-            return posion != take ? take : null;
+            try
+            {
+                next = result.take();
+                return posion != next;
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
-        catch ( InterruptedException e )
+
+        public ScannedFile next()
         {
-            throw new RuntimeException(  e );
+            if ( posion == next )
+            {
+                throw new NoSuchElementException( "We saw poison" );
+            }
+            return next;
+        }
+
+        public void remove()
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -92,22 +117,32 @@ public class DirScanner
         for ( final File file : files )
         {
             final ScannedFile scannedFile = new ScannedFile( file );
-            if ( scannedFile.isDirectory() )
+            if ( isIncluded( scannedFile ) )
             {
-                count.incrementAndGet();
-
-                executor.submit( new Runnable()
+                if ( !isExcluded( scannedFile ) )
                 {
-                    public void run()
+
+                    if ( scannedFile.isDirectory() )
                     {
-                        innerScan( file );
+                        scheduledCount.incrementAndGet();
+
+                        executor.submit( new Runnable()
+                        {
+                            public void run()
+                            {
+                                innerScan( file );
+                            }
+                        } );
                     }
-                } );
-            } else {
-                result.add( scannedFile );
+                    else
+                    {
+
+                        result.add( scannedFile );
+                    }
+                }
             }
         }
-        if ( count.decrementAndGet() < 0 )
+        if ( scheduledCount.decrementAndGet() < 0 )
         {
             result.add( posion );
         }
@@ -116,6 +151,53 @@ public class DirScanner
     public void close()
     {
         executor.shutdown();
+    }
+
+    /**
+     * Tests whether or not a name matches against at least one include
+     * pattern.
+     *
+     * @param name The name to match. Must not be <code>null</code>.
+     * @return <code>true</code> when the name matches against at least one
+     *         include pattern, or <code>false</code> otherwise.
+     */
+    protected boolean isIncluded( ScannedFile name )
+    {
+        final String[] includes = scannerOptions.getIncludes();
+        for ( int i = 0; i < includes.length; i++ )
+        {
+            if ( matchPath( includes[i], name.getFile().getName(), scannerOptions.isCaseSensitive()) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Tests whether or not a name matches against at least one exclude
+     * pattern.
+     *
+     * @param name The name to match. Must not be <code>null</code>.
+     * @return <code>true</code> when the name matches against at least one
+     *         exclude pattern, or <code>false</code> otherwise.
+     */
+    protected boolean isExcluded( ScannedFile name )
+    {
+        final String[] excludes = scannerOptions.getExcludes();
+        for ( int i = 0; i < excludes.length; i++ )
+        {
+            if ( matchPath( excludes[i], name.getFile().getName(), scannerOptions.isCaseSensitive() ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected static boolean matchPath( String pattern, String str, boolean isCaseSensitive )
+    {
+        return org.codehaus.plexus.util.SelectorUtils.matchPath( pattern, str, isCaseSensitive );
     }
 
 }
