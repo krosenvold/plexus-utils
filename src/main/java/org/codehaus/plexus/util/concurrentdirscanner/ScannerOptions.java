@@ -65,5 +65,4 @@ public class ScannerOptions
             excludes = new String[0];
         }
     }
-
 }

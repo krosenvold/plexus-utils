@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.codehaus.plexus.util.PathTool;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
@@ -38,8 +39,6 @@ public class DirScanner
     //ds.setCaseSensitive( isCaseSensitive() );
     //ds.setFollowSymlinks( isFollowingSymLinks() );
 
-    private final ScannerOptions scannerOptions;
-
     private final ExecutorService executor;
 
     private final AtomicInteger scheduledCount = new AtomicInteger();
@@ -47,12 +46,17 @@ public class DirScanner
     private final LinkedBlockingQueue<ScannedFile> result = new LinkedBlockingQueue<ScannedFile>();
 
     private final ScannedFile posion = new ScannedFile( new File( "." ) );
+    
+    private final Matchers includes;
+    
+    private final Matchers excludes;
 
     public DirScanner( ScannerOptions scannerOptions )
     {
-        this.scannerOptions = scannerOptions;
         scannerOptions.setupDefaultFilters();
         executor = Executors.newFixedThreadPool( scannerOptions.getThreads() );
+        this.includes = new Matchers(scannerOptions.getIncludes(), scannerOptions.isCaseSensitive());
+        this.excludes= new Matchers(scannerOptions.getExcludes(), scannerOptions.isCaseSensitive());
     }
 
     public Iterable<ScannedFile> scan( final File dir )
@@ -61,7 +65,7 @@ public class DirScanner
         {
             public void run()
             {
-                innerScan( dir );
+                innerScan( dir, "");
             }
         } );
 
@@ -107,36 +111,36 @@ public class DirScanner
         }
     }
 
-    private void innerScan( File dir )
+    private void innerScan( File rootDir, String subPath )
     {
-        File[] files = dir.listFiles();
+        String[] files = rootDir.list();
         if ( files == null )
         {
-            files = new File[]{ };
+            files = new String[]{ };
         }
-        for ( final File file : files )
+        for ( final String fileName : files )
         {
+            final String relativeFile = subPath.length() > 0 ?  subPath + File.separator + fileName
+                : fileName;
+            final File file = new File( rootDir, relativeFile );
             final ScannedFile scannedFile = new ScannedFile( file );
-            if ( isIncluded( scannedFile ) )
+            if ( includes.isMatch( relativeFile ) )
             {
-                if ( !isExcluded( scannedFile ) )
+                if ( !excludes.isMatch( relativeFile ) )
                 {
-
                     if ( scannedFile.isDirectory() )
                     {
                         scheduledCount.incrementAndGet();
-
                         executor.submit( new Runnable()
                         {
                             public void run()
                             {
-                                innerScan( file );
+                                innerScan( file, relativeFile );
                             }
                         } );
                     }
                     else
                     {
-
                         result.add( scannedFile );
                     }
                 }
@@ -151,53 +155,6 @@ public class DirScanner
     public void close()
     {
         executor.shutdown();
-    }
-
-    /**
-     * Tests whether or not a name matches against at least one include
-     * pattern.
-     *
-     * @param name The name to match. Must not be <code>null</code>.
-     * @return <code>true</code> when the name matches against at least one
-     *         include pattern, or <code>false</code> otherwise.
-     */
-    protected boolean isIncluded( ScannedFile name )
-    {
-        final String[] includes = scannerOptions.getIncludes();
-        for ( int i = 0; i < includes.length; i++ )
-        {
-            if ( matchPath( includes[i], name.getFile().getName(), scannerOptions.isCaseSensitive()) )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Tests whether or not a name matches against at least one exclude
-     * pattern.
-     *
-     * @param name The name to match. Must not be <code>null</code>.
-     * @return <code>true</code> when the name matches against at least one
-     *         exclude pattern, or <code>false</code> otherwise.
-     */
-    protected boolean isExcluded( ScannedFile name )
-    {
-        final String[] excludes = scannerOptions.getExcludes();
-        for ( int i = 0; i < excludes.length; i++ )
-        {
-            if ( matchPath( excludes[i], name.getFile().getName(), scannerOptions.isCaseSensitive() ) )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    protected static boolean matchPath( String pattern, String str, boolean isCaseSensitive )
-    {
-        return org.codehaus.plexus.util.SelectorUtils.matchPath( pattern, str, isCaseSensitive );
     }
 
 }
