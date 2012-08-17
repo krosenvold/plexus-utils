@@ -3128,8 +3128,8 @@ public class MXParser
     protected static final char LOOKUP_MAX_CHAR = (char)LOOKUP_MAX;
     //    protected static int lookupNameStartChar[] = new int[ LOOKUP_MAX_CHAR / 32 ];
     //    protected static int lookupNameChar[] = new int[ LOOKUP_MAX_CHAR / 32 ];
-    protected static boolean lookupNameStartChar[] = new boolean[ LOOKUP_MAX ];
-    protected static boolean lookupNameChar[] = new boolean[ LOOKUP_MAX ];
+    protected static final boolean lookupNameStartChar[] = new boolean[ LOOKUP_MAX ];
+    protected static final boolean lookupNameChar[] = new boolean[ LOOKUP_MAX ];
 
     private static final void setName(char ch)
         //{ lookupNameChar[ (int)ch / 32 ] |= (1 << (ch % 32)); }
